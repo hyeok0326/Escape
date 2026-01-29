@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>두바이 쿠키: 쫀득한 손맛</title>
+    <title>두바이 쿠키: 쫀득 시뮬레이터</title>
     <style>
         :root { --pista: #93c47d; --choco: #4e342e; --marsh: #fdfaf1; --cocoa: #3d2b1f; }
         body { background: #1a1a1a; color: white; font-family: 'Apple SD Gothic Neo', sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
@@ -10,18 +10,17 @@
         .screen { display: none; min-height: 400px; flex-direction: column; align-items: center; justify-content: center; }
         .active { display: flex; }
         
-        /* 게이지 스타일 */
         .gauge-container { width: 100%; height: 20px; background: #eee; border-radius: 10px; margin: 15px 0; position: relative; overflow: hidden; }
-        .gauge-fill { height: 100%; width: 0%; background: #e67e22; transition: width 0.05s; }
-        .target-zone { position: absolute; top: 0; height: 100%; background: rgba(46, 204, 113, 0.5); border-left: 2px solid #27ae60; border-right: 2px solid #27ae60; }
+        .gauge-fill { height: 100%; width: 0%; background: #e67e22; }
         
-        /* 버튼 & 컨트롤 */
-        button { padding: 12px 30px; font-size: 18px; cursor: pointer; border-radius: 12px; border: none; background: var(--choco); color: white; font-weight: bold; margin-top: 10px; }
+        button { padding: 12px 30px; font-size: 18px; cursor: pointer; border-radius: 12px; border: none; background: var(--choco); color: white; font-weight: bold; }
+        
         .tap-zone { display: flex; gap: 20px; margin-top: 20px; }
-        .tap-btn { width: 100px; height: 100px; border-radius: 50%; background: #ddd; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; user-select: none; }
-        .tap-btn.active { background: var(--pista); color: white; transform: scale(1.1); }
+        .tap-btn { width: 100px; height: 100px; border-radius: 50%; background: #ddd; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; user-select: none; border: 4px solid #bbb; }
+        .tap-btn.active { background: #e67e22; color: white; border-color: #d35400; transform: scale(0.95); }
 
-        canvas { border: 2px solid #f0f0f0; border-radius: 15px; background: #fafafa; cursor: pointer; }
+        canvas { border: 2px solid #f0f0f0; border-radius: 15px; background: #fafafa; cursor: ns-resize; }
+        #rolling-pin { width: 300px; height: 20px; background: #d2b48c; border-radius: 10px; position: absolute; pointer-events: none; transition: top 0.1s; }
         .hint { color: #7f8c8d; font-size: 14px; margin-top: 10px; }
     </style>
 </head>
@@ -31,51 +30,50 @@
 <div id="game-container">
     <div id="step1" class="screen active">
         <h2>STEP 1: 카다이프 고속 굽기</h2>
-        <p>빠르게 익습니다! 초록색 구간에서 버튼을 누르세요!</p>
         <div class="gauge-container">
             <div id="oven-gauge" class="gauge-fill" style="background: #d35400;"></div>
-            <div class="target-zone" style="left: 75%; width: 10%;"></div>
+            <div style="position: absolute; top:0; left:75%; width:10%; height:100%; background:rgba(46,204,113,0.5);"></div>
         </div>
         <button onclick="finishStep1()">지금 꺼내기!</button>
     </div>
 
     <div id="step2" class="screen">
         <h2>STEP 2: 카다이프 부수기</h2>
-        <p>스프레드와 함께 마구 문질러서 잘게 부수세요!</p>
         <canvas id="crush-canvas" width="450" height="200"></canvas>
         <div class="gauge-container"><div id="crush-gauge" class="gauge-fill"></div></div>
-        <p class="hint">클릭한 채로 빠르게 비비세요!</p>
     </div>
 
     <div id="step3" class="screen">
-        <h2>STEP 3: 후라이펜에서 마시멜로 녹이기</h2>
-        <p>마우스를 눌러 원을 그리며 휘저으세요!</p>
+        <h2>STEP 3: 마시멜로 녹이기</h2>
         <canvas id="melt-canvas" width="450" height="200"></canvas>
         <div class="gauge-container"><div id="melt-gauge" class="gauge-fill" style="background: #3498db;"></div></div>
     </div>
 
     <div id="step4" class="screen">
-        <h2>STEP 4: 마시멜로 얇게 펴기</h2>
-        <p>왼쪽(L)과 오른쪽(R)을 번갈아 눌러 반죽을 펴세요!</p>
-        <div id="spread-box" style="width: 200px; height: 100px; background: #fdfaf1; border-radius: 50%; transition: all 0.2s;"></div>
-        <div class="tap-zone">
-            <div id="btn-L" class="tap-btn" onmousedown="tap('L')">L</div>
-            <div id="btn-R" class="tap-btn" onmousedown="tap('R')">R</div>
+        <h2>STEP 4: 밀대로 마시멜로 펴기</h2>
+        <p>마우스를 위아래로 크게 움직여 밀대를 굴리세요!</p>
+        <div style="position: relative; width: 450px; height: 200px; background: #eee; border-radius: 15px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+            <div id="marshmallow-sheet" style="width: 100px; height: 60px; background: var(--marsh); border-radius: 30px; transition: all 0.1s;"></div>
+            <div id="rolling-pin" style="top: 50%;"></div>
         </div>
         <div class="gauge-container"><div id="spread-gauge" class="gauge-fill" style="background: var(--pista);"></div></div>
     </div>
 
     <div id="step5" class="screen">
         <h2>STEP 5: 둥글게 빚고 코코아 묻히기</h2>
-        <p>마우스를 누른 채로 크게 원을 그리세요!</p>
-        <canvas id="roll-canvas" width="450" height="200"></canvas>
-        <div class="gauge-container"><div id="roll-gauge" class="gauge-fill" style="background: var(--cocoa);"></div></div>
+        <p>L과 R을 번갈아 눌러 반죽을 둥글게 모으세요!</p>
+        <div id="final-cookie" style="width: 150px; height: 80px; background: var(--cocoa); border-radius: 40px; transition: all 0.2s; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);"></div>
+        <div class="tap-zone">
+            <div id="btn-L" class="tap-btn" onmousedown="tapFinal('L')">L (왼손)</div>
+            <div id="btn-R" class="tap-btn" onmousedown="tapFinal('R')">R (오른손)</div>
+        </div>
+        <div class="gauge-container"><div id="roll-gauge" class="gauge-fill" style="background: var(--choco);"></div></div>
     </div>
 
     <div id="result-screen" class="screen">
         <h1 id="total-grade">?</h1>
         <p id="comment"></p>
-        <button onclick="location.reload()">다시 시작</button>
+        <button onclick="location.reload()">새로 만들기</button>
     </div>
 </div>
 
@@ -85,10 +83,15 @@
     window.onmousedown = () => isMouseDown = true;
     window.onmouseup = () => isMouseDown = false;
 
-    // STEP 1: 빠른 오븐
+    function nextStep(c, n) {
+        document.getElementById('step' + c).classList.remove('active');
+        document.getElementById('step' + n).classList.add('active');
+    }
+
+    // STEP 1~3 로직 (간략화 유지)
     let ovenVal = 0;
     let ovenInterval = setInterval(() => {
-        ovenVal += 1.2; // 더 빠르게 진행
+        ovenVal += 1.2;
         document.getElementById('oven-gauge').style.width = ovenVal + '%';
         if(ovenVal >= 100) finishStep1();
     }, 30);
@@ -98,85 +101,91 @@
         nextStep(1, 2); initStep2();
     }
 
-    // STEP 2: 부수기
     function initStep2() {
         const cvs = document.getElementById('crush-canvas');
         const ctx = cvs.getContext('2d');
         let prog = 0;
         cvs.onmousemove = (e) => {
             if(!isMouseDown) return;
-            prog += 0.8;
+            prog += 1;
             document.getElementById('crush-gauge').style.width = Math.min(prog, 100) + '%';
             ctx.fillStyle = '#93c47d';
-            ctx.fillRect(e.offsetX, e.offsetY, 8, 8);
+            ctx.fillRect(e.offsetX, e.offsetY, 10, 10);
             if(prog >= 100) { scores.step2 = 100; nextStep(2, 3); initStep3(); }
         };
     }
 
-    // STEP 3: 마시멜로 녹이기 (휘젓기)
     function initStep3() {
         const cvs = document.getElementById('melt-canvas');
         const ctx = cvs.getContext('2d');
         let prog = 0;
         cvs.onmousemove = (e) => {
             if(!isMouseDown) return;
-            prog += 0.5;
+            prog += 0.8;
             document.getElementById('melt-gauge').style.width = Math.min(prog, 100) + '%';
             ctx.fillStyle = 'white';
-            ctx.beginPath(); ctx.arc(e.offsetX, e.offsetY, 25, 0, Math.PI*2); ctx.fill();
-            if(prog >= 100) { scores.step3 = 100; nextStep(3, 4); }
+            ctx.beginPath(); ctx.arc(e.offsetX, e.offsetY, 20, 0, Math.PI*2); ctx.fill();
+            if(prog >= 100) { scores.step3 = 100; nextStep(3, 4); initStep4(); }
         };
     }
 
-    // STEP 4: 좌우 교차 클릭
-    let lastKey = '';
-    let spreadProg = 0;
-    function tap(key) {
-        if(key !== lastKey) {
-            spreadProg += 4;
-            lastKey = key;
-            const box = document.getElementById('spread-box');
-            box.style.width = (200 + spreadProg) + 'px';
-            box.style.height = (100 + spreadProg/2) + 'px';
-            document.getElementById('spread-gauge').style.width = Math.min(spreadProg, 100) + '%';
+    // --- 수정된 STEP 4: 밀대 굴리기 로직 ---
+    function initStep4() {
+        const screen4 = document.getElementById('step4');
+        const pin = document.getElementById('rolling-pin');
+        const sheet = document.getElementById('marshmallow-sheet');
+        let lastY = 0;
+        let totalDist = 0;
+        let prog = 0;
+
+        screen4.onmousemove = (e) => {
+            let currentY = e.clientY;
+            pin.style.top = (e.offsetY) + "px"; // 밀대가 마우스를 따라다님
+
+            if (Math.abs(currentY - lastY) > 5) { // 움직임이 있을 때만
+                totalDist += Math.abs(currentY - lastY);
+                lastY = currentY;
+                
+                prog = (totalDist / 3000) * 100; // 3000픽셀만큼 움직여야 함
+                document.getElementById('spread-gauge').style.width = Math.min(prog, 100) + '%';
+                
+                // 마시멜로가 실제로 펴지는 시각 효과
+                sheet.style.width = (100 + prog*3) + "px";
+                sheet.style.height = (60 + prog/2) + "px";
+
+                if (prog >= 100) {
+                    scores.step4 = 100;
+                    screen4.onmousemove = null;
+                    setTimeout(() => nextStep(4, 5), 500);
+                }
+            }
+        };
+    }
+
+    // --- 수정된 STEP 5: 좌우 클릭으로 빚기 로직 ---
+    let lastKeyFinal = '';
+    let rollProg = 0;
+    function tapFinal(key) {
+        if (key !== lastKeyFinal) {
+            rollProg += 5;
+            lastKeyFinal = key;
+            const cookie = document.getElementById('final-cookie');
             
-            // 시각적 피드백
+            // 시각 효과: 좌우 클릭에 따라 모양이 점점 동그래짐
+            cookie.style.width = (150 - rollProg/2) + "px";
+            cookie.style.height = (80 + rollProg) + "px";
+            cookie.style.borderRadius = (40 + rollProg) + "px";
+
+            document.getElementById('roll-gauge').style.width = Math.min(rollProg, 100) + '%';
+            
             document.querySelectorAll('.tap-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('btn-' + key).classList.add('active');
 
-            if(spreadProg >= 100) {
-                scores.step4 = 100;
-                setTimeout(() => { nextStep(4, 5); initStep5(); }, 500);
+            if (rollProg >= 100) {
+                scores.step5 = 100;
+                setTimeout(showResult, 500);
             }
         }
-    }
-
-    // STEP 5: 빚기 (원 감지)
-    function initStep5() {
-        const cvs = document.getElementById('roll-canvas');
-        const ctx = cvs.getContext('2d');
-        let lastAngle = null, totalRot = 0, prog = 0;
-        cvs.onmousemove = (e) => {
-            if(!isMouseDown) { lastAngle = null; return; }
-            const ang = Math.atan2(e.offsetY - 100, e.offsetX - 225);
-            if (lastAngle !== null) {
-                let d = ang - lastAngle;
-                if (d > Math.PI) d -= Math.PI * 2;
-                if (d < -Math.PI) d += Math.PI * 2;
-                totalRot += Math.abs(d);
-            }
-            lastAngle = ang;
-            prog = (totalRot / (Math.PI * 6)) * 100;
-            document.getElementById('roll-gauge').style.width = Math.min(prog, 100) + '%';
-            ctx.fillStyle = '#3d2b1f';
-            ctx.beginPath(); ctx.arc(e.offsetX, e.offsetY, 15, 0, Math.PI*2); ctx.fill();
-            if(prog >= 100) { scores.step5 = 100; showResult(); }
-        };
-    }
-
-    function nextStep(c, n) {
-        document.getElementById('step' + c).classList.remove('active');
-        document.getElementById('step' + n).classList.add('active');
     }
 
     function showResult() {
@@ -184,7 +193,7 @@
         document.getElementById('result-screen').classList.add('active');
         const avg = (scores.step1 + scores.step2 + scores.step3 + scores.step4 + scores.step5) / 5;
         document.getElementById('total-grade').innerText = avg > 80 ? "S Grade" : "B Grade";
-        document.getElementById('comment').innerText = `최종 점수: ${Math.floor(avg)}점! 쫀득한 두바이 쿠키가 완성되었습니다.`;
+        document.getElementById('comment').innerText = `최종 점수: ${Math.floor(avg)}점! 두바이 쫀득 쿠키 완성!`;
     }
 </script>
 </body>
