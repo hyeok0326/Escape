@@ -1,1 +1,149 @@
-#read me html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>두바이 쫀득 쿠키 메이커</title>
+    <style>
+        /* CSS: 게임의 디자인 */
+        :root {
+            --pistachio: #93c47d;
+            --chocolate: #4e342e;
+            --gold: #f1c232;
+        }
+
+        body {
+            background-color: #fdf5e6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+        }
+
+        .game-container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            width: 350px;
+        }
+
+        h1 { color: var(--chocolate); font-size: 24px; margin-bottom: 10px; }
+
+        #cookie-stage {
+            font-size: 120px;
+            height: 160px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            user-select: none;
+        }
+
+        .bounce { transform: scale(1.1); }
+
+        #status-msg {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 25px;
+            min-height: 24px;
+        }
+
+        #action-btn {
+            background-color: var(--pistachio);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #6d9e5a;
+            transition: 0.1s;
+        }
+
+        #action-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        .score-board {
+            margin-top: 30px;
+            font-size: 16px;
+            color: var(--chocolate);
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        #count { font-weight: bold; font-size: 20px; color: #e67e22; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <h1>Dubai Cookie Maker</h1>
+        
+        <div id="cookie-stage">🥣</div>
+        <p id="status-msg">준비 단계: 재료를 모으세요!</p>
+        
+        <button id="action-btn" onclick="process()">카다이프 볶기</button>
+
+        <div class="score-board">
+            오늘 만든 쿠키: <span id="count">0</span>개
+        </div>
+    </div>
+
+    <script>
+        /* JavaScript: 게임 로직 */
+        let currentStep = 0;
+        let totalCookies = 0;
+
+        const steps = [
+            { img: "🔥", msg: "카다이프를 버터에 볶는 중...", btn: "피스타치오 섞기" },
+            { img: "💚", msg: "피스타치오 스프레드 듬뿍!", btn: "초콜릿 입히기" },
+            { img: "🍫", msg: "초콜릿으로 두껍게 코팅해요.", btn: "냉장고에 넣기" },
+            { img: "❄️", msg: "차갑게 굳혀서 쫀득하게!", btn: "꺼내기" },
+            { img: "🍪", msg: "와! 환상적인 두바이 쿠키 완성!", btn: "상자에 담기" }
+        ];
+
+        function process() {
+            const stage = document.getElementById('cookie-stage');
+            const msg = document.getElementById('status-msg');
+            const btn = document.getElementById('action-btn');
+            const countDisplay = document.getElementById('count');
+
+            // 애니메이션 효과
+            stage.classList.remove('bounce');
+            void stage.offsetWidth; // 리플로우 강제 발생
+            stage.classList.add('bounce');
+
+            if (currentStep < steps.length) {
+                // 단계별 진행
+                stage.innerText = steps[currentStep].img;
+                msg.innerText = steps[currentStep].msg;
+                btn.innerText = steps[currentStep].btn;
+                
+                // 완성 단계에 도달했을 때 색상 변경
+                if(currentStep === 4) btn.style.backgroundColor = "#e67e22";
+                
+                currentStep++;
+            } else {
+                // 한 개 완성 완료
+                totalCookies++;
+                countDisplay.innerText = totalCookies;
+                
+                // 초기화
+                currentStep = 0;
+                stage.innerText = "🥣";
+                msg.innerText = "하나 더 만들어볼까요?";
+                btn.innerText = "카다이프 볶기";
+                btn.style.backgroundColor = "#93c47d";
+            }
+        }
+    </script>
+</body>
+</html>
