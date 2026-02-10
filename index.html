@@ -2,229 +2,186 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>두바이 쿠키: 리얼 베이킹 시뮬레이터</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subway Escape: 어린이대공원역</title>
     <style>
-        :root { --pista: #93c47d; --choco: #4e342e; --marsh: #ffffff; --golden: #f1c232; --baked: #a0522d; }
-        body { background: #222; color: white; font-family: 'Apple SD Gothic Neo', sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
-        #game-container { background: #fff; color: #333; width: 600px; padding: 25px; border-radius: 25px; box-shadow: 0 15px 40px rgba(0,0,0,0.6); text-align: center; }
-        .screen { display: none; min-height: 450px; flex-direction: column; align-items: center; justify-content: center; position: relative; }
-        .active { display: flex; }
-        
-        /* 게이지 */
-        .gauge-container { width: 100%; height: 20px; background: #eee; border-radius: 10px; margin: 15px 0; position: relative; overflow: hidden; }
-        .gauge-fill { height: 100%; width: 0%; background: #e67e22; }
-        
-        /* 오븐 속 카다이프 */
-        #oven-cadaif { width: 200px; height: 120px; background: var(--golden); border-radius: 15px; margin-bottom: 20px; box-shadow: 0 0 20px rgba(255,165,0,0.2); border: 4px solid #ddd; }
+        body { 
+            margin: 0; background-color: #000; color: #eee; 
+            font-family: 'Courier New', Courier, monospace; 
+            display: flex; justify-content: center; align-items: center; 
+            height: 100vh; overflow: hidden;
+        }
+        #game-screen {
+            position: relative; width: 100vw; max-width: 1280px; aspect-ratio: 16 / 9;
+            background-color: #0a0a0a; overflow: hidden;
+            box-shadow: 0 0 100px rgba(0,0,0,1) inset;
+        }
+        .bg-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("subway.png"); background-size: cover; z-index: 1;
+        }
+        #flashlight {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle 130px at 50% 50%, rgba(255,255,245,0.2) 0%, rgba(0,0,0,0.85) 100%);
+            z-index: 5; pointer-events: none;
+        }
 
-        /* 마시멜로 덩어리 */
-        #marsh-cube { width: 100px; height: 100px; background: white; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-
-        button { padding: 12px 30px; font-size: 18px; cursor: pointer; border-radius: 12px; border: none; background: var(--choco); color: white; font-weight: bold; }
+        /* 엔딩 연출 */
+        #ghost-ending {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; display: none; z-index: 100; overflow: hidden;
+            flex-wrap: wrap; align-content: center; justify-content: center;
+            padding: 20px; box-sizing: border-box;
+        }
+        .ghost-pattern {
+            color: #ff0000; font-size: clamp(20px, 4vw, 36px); font-weight: 900; 
+            line-height: 1.4; margin: 5px; animation: tremor 0.05s infinite;
+            text-shadow: 0 0 8px rgba(255, 0, 0, 0.6); text-align: center;
+        }
+        @keyframes tremor { 
+            0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -1px); } 100% { transform: translate(1px, -1px); } 
+        }
         
-        .tap-zone { display: flex; gap: 20px; margin-top: 20px; }
-        .tap-btn { width: 100px; height: 100px; border-radius: 50%; background: #ddd; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; user-select: none; }
-        .tap-btn.active { background: #e67e22; color: white; }
+        .hotspot { position: absolute; cursor: pointer; z-index: 10; border: 1px dashed rgba(255,0,0,0.0); } 
 
-        canvas { border-radius: 15px; background: #fafafa; border: 2px solid #eee; }
-        #rolling-pin { width: 300px; height: 20px; background: #d2b48c; border-radius: 10px; position: absolute; pointer-events: none; }
+        /* 정밀 좌표 반영 */
+        #item-newspaper { width: 18%; height: 12%; top: 85%; left: 32%; } 
+        #item-hat { width: 8%; height: 8%; top: 76%; left: 65%; }          
+        #item-backpack { width: 10%; height: 15%; top: 62%; left: 56%; }   
+        #item-phone { width: 8%; height: 6%; top: 85%; left: 82%; }       
+        #item-note { width: 7%; height: 6%; top: 82%; left: 18%; }        
+        #door { width: 10%; height: 30%; top: 40%; left: 45%; }           
+
+        #message-box {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 85%; min-height: 110px; background: rgba(15, 15, 15, 0.95);
+            border: 1px solid #555; padding: 25px 20px 20px 20px; box-sizing: border-box; z-index: 30;
+        }
+        #close-btn { position: absolute; top: 5px; right: 15px; color: #888; cursor: pointer; font-size: 28px; }
     </style>
 </head>
-<body>
+<body onmousemove="moveFlashlight(event)">
 
-<h1>Dubai Cookie Master</h1>
-<div id="game-container">
+<div id="game-screen">
+    <div class="bg-layer"></div>
+    <div id="flashlight"></div>
+    <div id="ghost-ending"></div>
     
-    <div id="step1" class="screen active">
-        <h2>STEP 1: 카다이프 굽기</h2>
-        <div id="oven-cadaif"></div>
-        <p>익어가는 색을 보고 타이밍을 맞추세요!</p>
-        <div class="gauge-container">
-            <div id="oven-gauge" class="gauge-fill"></div>
-            <div style="position: absolute; top:0; left:75%; width:10%; height:100%; background:rgba(46,204,113,0.4); border-left:2px solid green;"></div>
-        </div>
-        <button onclick="finishStep1()">지금 꺼내기!</button>
-    </div>
+    <div id="item-phone" class="hotspot" onclick="handleInteraction('phone')"></div>
+    <div id="item-hat" class="hotspot" onclick="handleInteraction('hat')"></div>
+    <div id="item-note" class="hotspot" onclick="handleInteraction('note')"></div>
+    <div id="item-newspaper" class="hotspot" onclick="handleInteraction('news')"></div>
+    <div id="item-backpack" class="hotspot" onclick="handleInteraction('backpack')"></div>
+    <div id="door" class="hotspot" onclick="handleInteraction('door')"></div>
 
-    <div id="step2" class="screen">
-        <h2>STEP 2: 카다이프 잘게 부수기</h2>
-        <p>클릭할수록 긴 면이 가루가 됩니다!</p>
-        <canvas id="crush-canvas" width="450" height="220"></canvas>
-        <div class="gauge-container"><div id="crush-gauge" class="gauge-fill"></div></div>
-    </div>
-
-    <div id="step3" class="screen">
-        <h2>STEP 3: 마시멜로 녹이기</h2>
-        <div id="marsh-cube"></div>
-        <p>휘저어서 부드럽게 녹이세요!</p>
-        <canvas id="melt-canvas" width="450" height="150"></canvas>
-        <div class="gauge-container"><div id="melt-gauge" class="gauge-fill" style="background: #3498db;"></div></div>
-    </div>
-
-    <div id="step4" class="screen">
-        <h2>STEP 4: 밀대로 펴기</h2>
-        <div style="position: relative; width: 450px; height: 200px; background: #eee; border-radius: 15px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-            <div id="marsh-sheet" style="width: 100px; height: 100px; background: white; border-radius: 20px;"></div>
-            <div id="rolling-pin"></div>
-        </div>
-        <div class="gauge-container"><div id="spread-gauge" class="gauge-fill" style="background: var(--pista);"></div></div>
-    </div>
-
-    <div id="step5" class="screen">
-        <h2>STEP 5: 둥글게 둥글게 빚기</h2>
-        <p>L/R을 교대로 눌러 완벽한 공 모양을 만드세요!</p>
-        <div id="cookie-ball" style="width: 60px; height: 60px; background: #3d2b1f; border-radius: 50%; box-shadow: inset -5px -5px 15px rgba(0,0,0,0.5); transition: all 0.1s;"></div>
-        <div class="tap-zone">
-            <div id="btn-L" class="tap-btn" onmousedown="tapFinal('L')">L</div>
-            <div id="btn-R" class="tap-btn" onmousedown="tapFinal('R')">R</div>
-        </div>
-        <div class="gauge-container"><div id="roll-gauge" class="gauge-fill" style="background: #3d2b1f;"></div></div>
-    </div>
-
-    <div id="result-screen" class="screen">
-        <h1 id="total-grade" style="font-size: 60px;">S</h1>
-        <p id="comment"></p>
-        <button onclick="location.reload()">재도전</button>
+    <div id="message-box">
+        <span id="close-btn" onclick="closeMessage()">×</span>
+        <div id="msg-text">열차가 멈췄다. 왠지 익숙한 풍경이다. 주변을 조사해봐야겠다.</div>
     </div>
 </div>
 
 <script>
-    let scores = { step1: 0, step2: 0, step3: 0, step4: 0, step5: 0 };
-    let isMouseDown = false;
-    window.onmousedown = () => isMouseDown = true;
-    window.onmouseup = () => isMouseDown = false;
+    let discoveredItems = new Set(); 
+    let isMemoryMode = false;        
+    let memoryStep = 0;              
+    let isFinalRealization = false; 
 
-    // STEP 1: 색상 변화 로직
-    let ovenVal = 0;
-    const cadaif = document.getElementById('oven-cadaif');
-    let ovenInterval = setInterval(() => {
-        ovenVal += 1.2;
-        document.getElementById('oven-gauge').style.width = ovenVal + '%';
-        
-        // 샛노란색(#f1c232)에서 구릿빛(#a0522d)으로 보간(Interpolation)
-        let r = Math.floor(241 - (ovenVal * 0.8));
-        let g = Math.floor(194 - (ovenVal * 1.1));
-        let b = Math.floor(50 - (ovenVal * 0.1));
-        cadaif.style.backgroundColor = `rgb(${r},${g},${b})`;
+    const normalDesc = {
+        phone: "액정이 깨진 핸드폰이다. 배터리가 없는지 켜지지 않는다.",
+        hat: "먼지 쌓인 갈색 모자다. 어린이대공원 로고가 보인다.",
+        note: "구겨진 종이 조각이다. 입장권인 것 같다.",
+        news: "오래된 신문지다. 날짜가 꽤 지난 것 같다.",
+        backpack: "낡은 배낭이다. 누군가 급하게 두고 간 것 같다."
+    };
 
-        if(ovenVal >= 100) finishStep1();
-    }, 40);
+    // 요청하신 순서대로 재배치: 핸드폰 -> 모자 -> 표 -> 신문 -> 가방
+    const memorySteps = [
+        { id: 'phone', text: "핸드폰 액정 너머로 마지막 메시지가 떠오른다. '형, 살려줘.' 나는 그 목소리를 무시했다." },
+        { id: 'hat', text: "동생에게 사준 모자다. 챙에 묻은 건 피다. 그날, 비명소리가 승강장에 가득했다." },
+        { id: 'note', text: "내가 뺏었던 입장권이다. 동생이 집으로 도망치지 못하게 주머니에서 가로챘던 그 표다." },
+        { id: 'news', text: "'어린이대공원역 사고... 10대 소년 사망'. 내 이름이 목격자로 올라와 있다. 아니, 나는 가해자다." },
+        { id: 'backpack', text: "이건 내 동생의 가방이다. 안에서 녹슨 운전실 열쇠를 발견했다." }
+    ];
 
-    function finishStep1() {
-        clearInterval(ovenInterval);
-        scores.step1 = (ovenVal >= 75 && ovenVal <= 85) ? 100 : 40;
-        nextStep(1, 2); initStep2();
+    function moveFlashlight(e) {
+        const rect = document.getElementById('game-screen').getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        document.getElementById('flashlight').style.background = `radial-gradient(circle 130px at ${x}% ${y}%, rgba(255,255,245,0.2) 0%, rgba(0,0,0,0.85) 100%)`;
     }
 
-    // STEP 2: 면 조각내기
-    function initStep2() {
-        const cvs = document.getElementById('crush-canvas');
-        const ctx = cvs.getContext('2d');
-        let clickCount = 0;
-        
-        // 초기 상태: 긴 면 그리기
-        ctx.strokeStyle = '#e6ccb2';
-        ctx.lineWidth = 2;
-        for(let i=0; i<30; i++) {
-            ctx.beginPath();
-            ctx.moveTo(Math.random()*450, 20);
-            ctx.quadraticCurveTo(Math.random()*450, 100, Math.random()*450, 200);
-            ctx.stroke();
-        }
-
-        cvs.onmousedown = (e) => {
-            clickCount++;
-            let prog = (clickCount / 40) * 100;
-            document.getElementById('crush-gauge').style.width = prog + '%';
-            
-            // 클릭 지점의 면을 지우고 잘게 부서진 점 찍기
-            ctx.fillStyle = '#fafafa'; // 배경색으로 지우기 효과
-            ctx.beginPath(); ctx.arc(e.offsetX, e.offsetY, 25, 0, Math.PI*2); ctx.fill();
-            
-            ctx.fillStyle = '#93c47d'; // 피스타치오 가루
-            for(let i=0; i<15; i++) {
-                ctx.fillRect(e.offsetX + (Math.random()-0.5)*40, e.offsetY + (Math.random()-0.5)*40, 4, 4);
-            }
-
-            if(clickCount >= 40) { scores.step2 = 100; setTimeout(() => { nextStep(2, 3); initStep3(); }, 500); }
-        };
+    function updateMessage(text) {
+        document.getElementById('message-box').style.display = 'block';
+        document.getElementById('msg-text').innerHTML = text;
     }
 
-    // STEP 3: 마시멜로 녹이기 (네모 -> 흐물)
-    function initStep3() {
-        const cube = document.getElementById('marsh-cube');
-        const cvs = document.getElementById('melt-canvas');
-        const ctx = cvs.getContext('2d');
-        let prog = 0;
-        cvs.onmousemove = (e) => {
-            if(!isMouseDown) return;
-            prog += 0.8;
-            document.getElementById('melt-gauge').style.width = prog + '%';
-            
-            // 마시멜로 모양 변화
-            cube.style.borderRadius = (10 + prog/2) + "%";
-            cube.style.transform = `scale(${1 + prog/500}) rotate(${prog/10}deg)`;
-            cube.style.opacity = 1 - (prog/150);
-
-            ctx.fillStyle = 'rgba(255,255,255,0.2)';
-            ctx.beginPath(); ctx.arc(e.offsetX, e.offsetY, 20, 0, Math.PI*2); ctx.fill();
-
-            if(prog >= 100) { scores.step3 = 100; setTimeout(() => nextStep(3, 4), 500); initStep4(); }
-        };
-    }
-
-    // STEP 4: 밀대
-    function initStep4() {
-        const screen = document.getElementById('step4');
-        const pin = document.getElementById('rolling-pin');
-        const sheet = document.getElementById('marsh-sheet');
-        let lastY = 0, dist = 0;
-        screen.onmousemove = (e) => {
-            pin.style.top = e.offsetY + "px";
-            if (Math.abs(e.clientY - lastY) > 5) {
-                dist += Math.abs(e.clientY - lastY);
-                lastY = e.clientY;
-                let prog = (dist / 3000) * 100;
-                document.getElementById('spread-gauge').style.width = prog + '%';
-                sheet.style.width = (100 + prog*2.5) + "px";
-                sheet.style.height = (100 - prog/2) + "px"; // 얇아지는 효과
-                if (prog >= 100) { scores.step4 = 100; screen.onmousemove = null; setTimeout(() => nextStep(4, 5), 500); }
-            }
-        };
-    }
-
-    // STEP 5: 둥글게 빚기 (동글동글 모양)
-    let lastKey = '', rollProg = 0;
-    function tapFinal(key) {
-        if (key !== lastKey) {
-            rollProg += 5; lastKey = key;
-            const ball = document.getElementById('cookie-ball');
-            
-            // 위아래가 아닌 전체적으로 커지는 원형 효과
-            let size = 60 + (rollProg * 1.2);
-            ball.style.width = size + "px";
-            ball.style.height = size + "px";
-            
-            document.getElementById('roll-gauge').style.width = rollProg + '%';
-            document.querySelectorAll('.tap-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('btn-' + key).classList.add('active');
-            
-            if (rollProg >= 100) { scores.step5 = 100; setTimeout(showResult, 500); }
+    function closeMessage() { 
+        document.getElementById('message-box').style.display = 'none'; 
+        if (isFinalRealization) {
+            triggerGhostEnding();
         }
     }
 
-    function nextStep(c, n) {
-        document.getElementById('step' + c).classList.remove('active');
-        document.getElementById('step' + n).classList.add('active');
+    function handleInteraction(itemId) {
+        if (!isMemoryMode) {
+            if (itemId === 'door') {
+                updateMessage("문이 잠겨 있다. 더 조사할 것이 남은 것 같다.");
+                return;
+            }
+            discoveredItems.add(itemId);
+            updateMessage(normalDesc[itemId]);
+
+            if (discoveredItems.size === 5) {
+                isMemoryMode = true; 
+            }
+        } 
+        else {
+            if (itemId === 'door') {
+                if (memoryStep >= 5) {
+                    isFinalRealization = true; 
+                    updateMessage("내가 동생을 밀쳤다. 이제 피할 수 없다.");
+                } else {
+                    updateMessage("문이 열리지 않는다. 머릿속이 복잡하다.");
+                }
+                return;
+            }
+
+            let alreadyUnlockedIndex = memorySteps.findIndex(step => step.id === itemId);
+            
+            if (alreadyUnlockedIndex !== -1 && alreadyUnlockedIndex < memoryStep) {
+                updateMessage(memorySteps[alreadyUnlockedIndex].text);
+            } 
+            else if (itemId === memorySteps[memoryStep].id) {
+                updateMessage(memorySteps[memoryStep].text);
+                memoryStep++;
+            } 
+            else {
+                updateMessage(normalDesc[itemId]);
+            }
+        }
     }
 
-    function showResult() {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById('result-screen').classList.add('active');
-        const avg = (scores.step1 + scores.step2 + scores.step3 + scores.step4 + scores.step5) / 5;
-        document.getElementById('total-grade').innerText = avg > 90 ? "S" : "A";
-        document.getElementById('comment').innerText = `최종 점수: ${Math.floor(avg)}점!`;
+    function triggerGhostEnding() {
+        const ghostLayer = document.getElementById('ghost-ending');
+        const phrase = "왜 나를 밀쳤어? ";
+        ghostLayer.innerHTML = `<div class="ghost-pattern">${phrase.repeat(200)}</div>`;
+        ghostLayer.style.display = 'flex';
+        
+        setTimeout(() => {
+            alert("...헉! \n\n어린이대공원역 승강장에서 깨어났습니다. \n손에는 피 묻은 모자가 들려있습니다.");
+            try {
+                window.close(); 
+                document.body.innerHTML = `
+                    <div style="background:#000; color:#444; height:100vh; display:flex; 
+                         justify-content:center; align-items:center; font-family:sans-serif;">
+                        기억이 소멸되었습니다. 브라우저 탭을 직접 닫아주세요.
+                    </div>`;
+            } catch (e) {
+                console.log("창 닫기 실패:", e);
+            }
+        }, 4000);
     }
 </script>
+
 </body>
 </html>
