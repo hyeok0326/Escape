@@ -16,10 +16,7 @@
         .horror-active #bg-normal { opacity: 0; }
         .horror-active #bg-horror { opacity: 1; }
 
-        #horror-flash { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(150, 0, 0, 0.6); opacity: 0; z-index: 100; pointer-events: none; 
-        }
+        #horror-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(150, 0, 0, 0.6); opacity: 0; z-index: 100; pointer-events: none; }
 
         .hotspot { position: absolute; z-index: 10; cursor: pointer; }
         #lighter-on-bed { top: 55%; left: 15%; width: 10%; height: 8%;}
@@ -30,12 +27,7 @@
 
         #flashlight { position: absolute; width: 100%; height: 100%; background: radial-gradient(circle 120px at 50% 50%, rgba(255,255,245,0.05) 0%, rgba(0,0,0,0.98) 100%); z-index: 5; pointer-events: none; transition: opacity 1s; }
         
-        #blood-splash { 
-            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: url('../assets/effect/blood_splatter.png') no-repeat center; 
-            background-size: contain; z-index: 500; pointer-events: none; 
-            transform-origin: center;
-        }
+        #blood-splash { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('../assets/effect/blood_splatter.png') no-repeat center; background-size: contain; z-index: 500; pointer-events: none; transform-origin: center; }
         .blood-active { display: block !important; animation: blood-burst 0.5s ease-out forwards; }
 
         #message-box { height: 100px; width: 600px; background: #0f0f0f; border: 2px solid #333; padding: 15px; box-sizing: border-box; z-index: 20; }
@@ -50,7 +42,6 @@
         #modal-content { position: relative; width: 80%; height: 70%; background: #fdf5e6; border: 5px solid #8b4513; padding: 30px; box-sizing: border-box; color: #333; line-height: 1.8; }
         #modal-content.horror-diary { background: #200; border-color: #f00; color: #f00; }
 
-        /* 붉게 변하는 비밀 암호 스타일 */
         .secret-code { color: inherit; font-weight: inherit; transition: color 0.5s; }
         .revealed .secret-code { color: #d00; font-weight: bold; text-shadow: 0 0 5px rgba(255,0,0,0.3); }
 
@@ -97,7 +88,8 @@
 
 <div id="inventory">
     <div id="slot-0" class="inv-slot" onclick="selectSlot(0)"></div>
-    <div id="slot-1" class="inv-slot" onclick="selectSlot(2)"></div> <div id="slot-2" class="inv-slot" onclick="selectSlot(1)"></div>
+    <div id="slot-1" class="inv-slot" onclick="selectSlot(1)"></div>
+    <div id="slot-2" class="inv-slot" onclick="selectSlot(2)"></div>
     <div id="slot-3" class="inv-slot" onclick="selectSlot(3)"></div>
 </div>
 
@@ -115,9 +107,7 @@
     let flags = { isHorror: false, talismanBurned: false, codeRevealed: false, itemsPicked: {} };
 
     function goToMain() {
-        if(confirm("메인 화면으로 돌아가시겠습니까?")) {
-            window.location.href = 'index.html'; 
-        }
+        if(confirm("메인 화면으로 돌아가시겠습니까?")) { window.location.href = 'index.html'; }
     }
 
     function moveFlashlight(e) {
@@ -152,21 +142,61 @@
 
     function selectSlot(i) {
         if (!inventory[i]) return;
-        if (selectedIndices.includes(i)) selectedIndices = []; 
-        else {
-            selectedIndices.push(i);
-            if (selectedIndices.length === 2) checkCombination();
+        
+        // 이미 선택된 걸 누르면 해제
+        if (selectedIndices.includes(i)) {
+            selectedIndices = selectedIndices.filter(idx => idx !== i);
+        } else {
+            // 최대 2개까지만 선택 가능
+            if (selectedIndices.length < 2) {
+                selectedIndices.push(i);
+            } else {
+                updateMessage("아이템은 최대 2개까지만 선택할 수 있습니다.");
+            }
         }
+        
         renderInventory();
+        
+        // 2개가 선택되면 자동으로 조합 체크
+        if (selectedIndices.length === 2) {
+            setTimeout(checkCombination, 200);
+        }
     }
 
     function checkCombination() {
-        const ids = selectedIndices.map(idx => inventory[idx].id);
-        if (ids.includes('mirror') && ids.includes('knife') && !flags.isHorror) triggerRitual();
+        const idx1 = selectedIndices[0];
+        const idx2 = selectedIndices[1];
+        const ids = [inventory[idx1].id, inventory[idx2].id];
+
+        let success = false;
+
+        // 1. 거울 + 칼 조합 (의식 시작)
+        if (ids.includes('mirror') && ids.includes('knife') && !flags.isHorror) {
+            triggerRitual();
+            // 거울 소모
+            const mirrorIdx = inventory[idx1].id === 'mirror' ? idx1 : idx2;
+            inventory[mirrorIdx] = null;
+            success = true;
+        } 
+        // 2. 부적 + 라이터 조합
         else if (ids.includes('talisman') && ids.includes('lighter')) {
-            if (flags.isHorror) burnTalisman();
-            else updateMessage("아직 부적을 사용할 때가 아닌 것 같다.");
+            if (flags.isHorror) {
+                burnTalisman();
+                // 부적 소모
+                const talisIdx = inventory[idx1].id === 'talisman' ? idx1 : idx2;
+                inventory[talisIdx] = null;
+                success = true;
+            } else {
+                updateMessage("아직 부적을 사용할 때가 아닌 것 같다.");
+            }
         }
+
+        // 조합 실패 시 처리
+        if (!success && selectedIndices.length === 2) {
+            updateMessage("아무것도 조합할 수 없다.");
+        }
+
+        // 선택 해제 및 갱신
         selectedIndices = [];
         renderInventory();
     }
@@ -183,21 +213,16 @@
             document.getElementById('flashlight').style.display = 'none';
             updateMessage("쨍그랑! 거울이 깨지며 공기가 무겁게 내려앉습니다...");
         }, 1500);
-        inventory = inventory.map(item => (item && item.id === 'mirror') ? null : item);
-        renderInventory();
     }
 
     function burnTalisman() {
-        inventory = inventory.map(item => (item && item.id === 'talisman') ? null : item);
         flags.talismanBurned = true;
         document.getElementById('game-screen').classList.add('loop-shake');
         updateMessage("부적을 태웠습니다! 무언가 울부짖는 소리가 들립니다!");
-        renderInventory();
     }
 
     function interactDiary() {
         const selected = selectedIndices.length === 1 ? inventory[selectedIndices[0]] : null;
-        
         if (flags.isHorror) {
             if (selected && selected.id === 'knife' && flags.talismanBurned) {
                 document.getElementById('blood-splash').classList.add('blood-active'); 
@@ -207,10 +232,8 @@
             }
             showModal(`<div style='font-size:1.1rem; line-height:1.2; animation: pulse 0.1s infinite;'>${"그만".repeat(150)}</div>`, true);
         } else {
-            const isLighterSelected = (selected && selected.id === 'lighter');
-            if (isLighterSelected) flags.codeRevealed = true;
-
-            const diaryHTML = `
+            if (selected && selected.id === 'lighter') flags.codeRevealed = true;
+            showModal(`
                 <h3>5월 4일</h3>
                 <p class="${flags.codeRevealed ? 'revealed' : ''}">
                     <span class="secret-code">오</span>늘의 
@@ -220,8 +243,7 @@
                     <br><br>
                     <span style="color:rgba(150,0,0,0.6);">(뒷 내용은 핏자국 때문에 보이지 않는다.)</span>
                 </p>
-            `;
-            showModal(diaryHTML);
+            `);
         }
     }
 
@@ -234,9 +256,8 @@
 
     function showModal(html, isHorror = false) {
         const modal = document.getElementById('game-modal');
-        const content = document.getElementById('modal-content');
         document.getElementById('modal-text').innerHTML = html;
-        content.className = isHorror ? 'horror-diary' : '';
+        document.getElementById('modal-content').className = isHorror ? 'horror-diary' : '';
         modal.style.display = 'flex';
     }
     function closeModal() { document.getElementById('game-modal').style.display = 'none'; }
